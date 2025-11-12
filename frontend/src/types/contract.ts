@@ -1,5 +1,6 @@
 export interface ContractInputs {
   supplier_name: string;
+  buyer_name: string;
   product: string;
   annual_volume: string;
   delivery: string;

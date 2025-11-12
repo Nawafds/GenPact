@@ -17,7 +17,7 @@ ${inputs.supplier_name}
 (hereinafter referred to as "Supplier")
 
 BUYER:
-[Buyer Name to be specified]
+${inputs.buyer_name}
 (hereinafter referred to as "Buyer")
 
 Supplier and Buyer may be referred to individually as a "Party" or collectively as the "Parties."
@@ -93,7 +93,7 @@ IN WITNESS WHEREOF, the Parties have executed this Agreement as of the Effective
 _______________________          _______________________
 Supplier Signature                 Buyer Signature
 
-${inputs.supplier_name}              [Buyer Name]
+${inputs.supplier_name}              ${inputs.buyer_name}
 
 Date: _______________             Date: _______________
 `;

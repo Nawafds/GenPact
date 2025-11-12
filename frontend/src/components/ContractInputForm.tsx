@@ -13,6 +13,7 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
   const [currentStep, setCurrentStep] = useState(1);
   const [inputs, setInputs] = useState<ContractInputs>({
     supplier_name: '',
+    buyer_name: '',
     product: '',
     annual_volume: '',
     delivery: '',
@@ -66,6 +67,18 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
                 onChange={handleChange}
                 required
                 placeholder="e.g., PrimeTech Components"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="buyer_name">Buyer Name *</label>
+              <input
+                type="text"
+                id="buyer_name"
+                name="buyer_name"
+                value={inputs.buyer_name}
+                onChange={handleChange}
+                required
+                placeholder="e.g., Apex Robotics"
               />
             </div>
             <div className="form-group">

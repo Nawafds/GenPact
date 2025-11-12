@@ -25,6 +25,7 @@ app.add_middleware(
 # Request model for contract generation
 class SupplyAgreementRequest(BaseModel):
     supplier_name: str
+    buyer_name: str
     product: str
     annual_volume: str
     delivery: str
@@ -138,6 +139,7 @@ REQUIRED CONTRACT STRUCTURE:
 
 CONTRACT DETAILS TO INCORPORATE:
 - Supplier Name: {request.supplier_name}
+- Buyer Name: {request.buyer_name}
 - Product: {request.product}
 - Annual Volume: {request.annual_volume}
 - Delivery Terms: {request.delivery}
