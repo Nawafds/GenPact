@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ContractInputForm from './components/ContractInputForm';
 import ContractEditor from './components/ContractEditor';
-import { generateContractAPI } from './utils/api';
+import { generateContractStreamAPI } from './utils/api';
 import type { ContractInputs } from './types/contract';
 import GenPactLogo from './assets/GenPact.svg';
 import './App.css';
@@ -17,15 +17,24 @@ function App() {
   const handleFormSubmit = async (inputs: ContractInputs) => {
     setIsLoading(true);
     setError(null);
+    setContract(''); // Clear previous contract
+    setViewMode('editor'); // Switch to editor view immediately to show streaming
     
     try {
-      const generatedContract = await generateContractAPI(inputs);
-      setContract(generatedContract);
-      setViewMode('editor');
+      // Stream the contract generation
+      await generateContractStreamAPI(
+        inputs,
+        (delta: string) => {
+          // Append each delta to the contract
+          setContract(prev => prev + delta);
+        }
+      );
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate contract. Please try again.';
       setError(errorMessage);
       console.error('Error generating contract:', err);
+      // Optionally switch back to input view on error
+      // setViewMode('input');
     } finally {
       setIsLoading(false);
     }
@@ -70,6 +79,17 @@ function App() {
           </>
         ) : (
           <div className="editor-container">
+            {isLoading && (
+              <div className="streaming-indicator">
+                <div className="spinner"></div>
+                <p className="loading-text">Generating contract...</p>
+              </div>
+            )}
+            {error && (
+              <div className="error-message">
+                <strong>Error:</strong> {error}
+              </div>
+            )}
             <div className="editor-panel">
               <ContractEditor contract={contract} onContractChange={setContract} />
             </div>

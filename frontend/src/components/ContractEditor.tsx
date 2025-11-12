@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { jsPDF } from 'jspdf';
 import ReactMarkdown from 'react-markdown';
 import './ContractEditor.css';
@@ -10,6 +10,23 @@ interface ContractEditorProps {
 
 export default function ContractEditor({ contract, onContractChange }: ContractEditorProps) {
   const [isEditMode, setIsEditMode] = useState(false);
+  const markdownRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Auto-scroll to bottom when contract content changes (for streaming)
+  useEffect(() => {
+    if (contract && !isEditMode) {
+      // Scroll markdown view to bottom
+      if (markdownRef.current) {
+        markdownRef.current.scrollTop = markdownRef.current.scrollHeight;
+      }
+    } else if (contract && isEditMode) {
+      // Scroll textarea to bottom
+      if (textareaRef.current) {
+        textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+      }
+    }
+  }, [contract, isEditMode]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onContractChange(e.target.value);
@@ -268,13 +285,14 @@ export default function ContractEditor({ contract, onContractChange }: ContractE
       </div>
       {isEditMode ? (
         <textarea
+          ref={textareaRef}
           className="contract-textarea"
           value={contract}
           onChange={handleChange}
           placeholder="Contract content will appear here..."
         />
       ) : (
-        <div className="contract-markdown">
+        <div ref={markdownRef} className="contract-markdown">
           <ReactMarkdown>{contract || 'No contract content available.'}</ReactMarkdown>
         </div>
       )}

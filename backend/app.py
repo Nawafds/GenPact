@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import requests
@@ -46,6 +47,7 @@ class QuestionRequest(BaseModel):
 
 # External API configuration
 EXTERNAL_API_URL = os.getenv("EXTERNAL_API_URL")
+STREAM_API_URL = os.getenv("STREAM_API_URL")
 
 # OAuth2 token endpoint configuration
 TOKEN_URL = os.getenv("TOKEN_URL")
@@ -226,6 +228,76 @@ async def generate_contract(request: SupplyAgreementRequest):
         json_response = json.loads(response.text)
         answer_body = json_response["data"]["answer_body"]
         return {"llm_response": answer_body}
+        
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"External API error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.post("/generate-contract-stream")
+async def generate_contract_stream(request: SupplyAgreementRequest):
+    """
+    Endpoint that accepts contract details and streams a Supply Agreement Contract via LLM API.
+    Returns a streaming response instead of waiting for the complete response.
+    """
+    try:
+        # Construct the prompt from contract details
+        prompt = construct_contract_prompt(request)
+        
+        # Prepare payload matching the API structure
+        payload = {
+            "question_body": prompt,
+            "index_name": request.index_name
+        }
+        
+        # Get access token
+        auth_token = get_access_token()
+        
+        # Prepare headers
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream',
+            'Authorization': auth_token
+        }
+        
+        # Make streaming request to external API
+        response = requests.post(
+            STREAM_API_URL,
+            headers=headers,
+            data=json.dumps(payload),
+            stream=True
+        )
+        
+        # Check if request was successful
+        response.raise_for_status()
+        
+        def generate():
+            """
+            Generator function that yields chunks from the streaming response.
+            Handles Server-Sent Events (SSE) format.
+            """
+            try:
+                # Stream the response chunk by chunk
+                for chunk in response.iter_content(chunk_size=None):
+                    if chunk:
+                        yield chunk
+            except Exception as e:
+                # Log error but don't raise to avoid breaking the stream
+                error_msg = f"\n\n[Error during streaming: {str(e)}]"
+                yield error_msg.encode('utf-8')
+            finally:
+                # Ensure response is closed
+                response.close()
+        
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
         
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"External API error: {str(e)}")
