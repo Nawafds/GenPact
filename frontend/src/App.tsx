@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import ContractInputForm from './components/ContractInputForm';
 import ContractEditor from './components/ContractEditor';
-import LLMHelper from './components/LLMHelper';
 import { generateContractAPI } from './utils/api';
 import type { ContractInputs } from './types/contract';
 import GenPactLogo from './assets/GenPact.svg';
@@ -59,7 +58,15 @@ function App() {
                 <strong>Error:</strong> {error}
               </div>
             )}
-            <ContractInputForm onSubmit={handleFormSubmit} isLoading={isLoading} />
+            <div className="form-container">
+              {isLoading && (
+                <div className="loading-overlay">
+                  <div className="spinner"></div>
+                  <p className="loading-text">Generating Contract...</p>
+                </div>
+              )}
+              <ContractInputForm onSubmit={handleFormSubmit} isLoading={isLoading} />
+            </div>
           </>
         ) : (
           <div className="editor-container">
