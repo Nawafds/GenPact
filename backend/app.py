@@ -4,6 +4,12 @@ from pydantic import BaseModel
 from typing import List, Optional
 import requests
 import json
+import time
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = FastAPI()
 
@@ -38,9 +44,73 @@ class QuestionRequest(BaseModel):
     index_name: Optional[List[str]] = ["1762885457669_uat_contracts"]
 
 # External API configuration
-EXTERNAL_API_URL = "https://academy.beyond-search.uat.udi.beyond.ai/api/sessions/texts"
+EXTERNAL_API_URL = os.getenv("EXTERNAL_API_URL")
 
-AUTHORIZATION_TOKEN = 'Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJFbHpTUlpZblIwcjA5UWhDUnltcVZsb3M0c2dYSXhfRGxUWEEwdHpyQ0JvIn0.eyJleHAiOjE3NjI5MDQxNDAsImlhdCI6MTc2MjkwMzg0MCwianRpIjoiZmEzMDdkOTItZjk5My00YzA2LTg0ZTktZWRhZGEzNjBlYThjIiwiaXNzIjoiaHR0cHM6Ly9rYy1icy51ZGkuYmV5b25kLmFpL3JlYWxtcy9hY2FkZW15Iiwic3ViIjoiNWU3MTljZDEtMmVmMi00YmZmLWI2YjktNzEwN2RlOTJmZDg4IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiMTZNeGpoeTgxd1l5eTNsM2ZpR3RYcnJ1eURjSCIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiQmFzaWMiLCJUZW5hbnQgQWRtaW5pc3RyYXRvciIsIlJlcG9zaXRvcnkgTWFuYWdlciIsIkRldmVsb3BlciJdfSwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwiY2xpZW50SG9zdCI6IjcyLjEwLjgzLjE1NCIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwibmFtZSI6IkdlblBhY3RfVGVhbTIgJ0FQSSBLZXknIiwicHJlZmVycmVkX3VzZXJuYW1lIjoic2VydmljZS1hY2NvdW50LTE2bXhqaHk4MXd5eXkzbDNmaWd0eHJydXlkY2giLCJnaXZlbl9uYW1lIjoiR2VuUGFjdF9UZWFtMiIsImNsaWVudEFkZHJlc3MiOiI3Mi4xMC44My4xNTQiLCJmYW1pbHlfbmFtZSI6IidBUEkgS2V5JyIsImNsaWVudF9pZCI6IjE2TXhqaHk4MXdZeXkzbDNmaUd0WHJydXlEY0gifQ.P-_C2xO3Mm5ZppjKh4Sjc0BaeERy9HOGdQtt_rN5zdM6qGzQoD-3-81N2bPcpQ-atqxlF29bDQVbwoQRtL-y1tnIf1l_kU1e4wKncCzzb44-kDwkW1Eyjc8UdniCMFSyV9ywN8FjbSVExxgRD_HPBPfRJlEKTzbxIBfEilXedTlHW099sfpxV85SPCHxG2HWza_vpG6aZ3phob8RPcHx0U9dtDwXw0AyRwGWEcRw9-Nm7mgmWIpArdy5Hq8S19UvUOlUxyK6MikMLx-oUnBsWQR98PgJc9iQ2C-XU79Of13k0Qh6EmubP_8NDrCyuvtIEmOXOaeeoZICe9JSMUfNkQ'
+# OAuth2 token endpoint configuration
+TOKEN_URL = os.getenv("TOKEN_URL")
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+
+# Validate that environment variables are set
+if not CLIENT_ID or not CLIENT_SECRET:
+    raise ValueError("CLIENT_ID and CLIENT_SECRET must be set in environment variables or .env file")
+if not EXTERNAL_API_URL or not TOKEN_URL:
+    raise ValueError("EXTERNAL_API_URL and TOKEN_URL must be set in environment variables or .env file")
+
+# Token cache
+_token_cache = {
+    "access_token": None,
+    "expires_at": 0
+}
+
+def get_access_token() -> str:
+    """
+    Fetches an OAuth2 access token using client credentials flow.
+    Caches the token until it expires.
+    """
+    global _token_cache
+    
+    # Check if cached token is still valid (with 60 second buffer)
+    current_time = time.time()
+    if _token_cache["access_token"] and current_time < (_token_cache["expires_at"] - 60):
+        return f'Bearer {_token_cache["access_token"]}'
+    
+    # Fetch new token
+    try:
+        token_data = {
+            "grant_type": "client_credentials",
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET
+        }
+        
+        response = requests.post(
+            TOKEN_URL,
+            data=token_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        
+        response.raise_for_status()
+        token_response = response.json()
+        
+        access_token = token_response["access_token"]
+        expires_in = token_response.get("expires_in", 3600)  # Default to 1 hour if not provided
+        
+        # Cache the token
+        _token_cache["access_token"] = access_token
+        _token_cache["expires_at"] = current_time + expires_in
+        
+        return f'Bearer {access_token}'
+        
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to obtain access token: {str(e)}"
+        )
+    except KeyError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Invalid token response: missing {str(e)}"
+        )
 
 def construct_contract_prompt(request: SupplyAgreementRequest) -> str:
     """
@@ -91,11 +161,14 @@ async def generate_contract(request: SupplyAgreementRequest):
             "index_name": request.index_name
         }
         
+        # Get access token
+        auth_token = get_access_token()
+        
         # Prepare headers
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'text/event-stream',
-            'Authorization': AUTHORIZATION_TOKEN
+            'Authorization': auth_token
         }
         
         # Make request to external API
@@ -129,11 +202,14 @@ async def query(request: QuestionRequest):
             "index_name": request.index_name
         }
         
+        # Get access token
+        auth_token = get_access_token()
+        
         # Prepare headers
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'text/event-stream',
-            'Authorization': AUTHORIZATION_TOKEN
+            'Authorization': auth_token
         }
         
         # Make request to external API
