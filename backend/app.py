@@ -116,33 +116,73 @@ def construct_contract_prompt(request: SupplyAgreementRequest) -> str:
     """
     Constructs a comprehensive prompt for generating a Supply Agreement Contract.
     """
-    prompt = f"""I need a Supply Agreement Contract. Here are the details:
+    prompt = f"""Generate a professional Supply Agreement Contract in markdown format. The contract must be structured as a complete, legally-formatted document suitable for display in a markdown viewer.
 
-Supplier Name: {request.supplier_name}
+CRITICAL FORMATTING REQUIREMENTS:
+- Use markdown headers: # for main title, ## for major sections, ### for subsections
+- Use **bold** for important terms, party names, and defined terms
+- Use numbered lists (1., 2., 3.) for main sections
+- Use bullet points (- or *) for sub-items
+- Include proper spacing between sections
+- Use horizontal rules (---) to separate major sections if appropriate
+- Ensure consistent formatting throughout
 
-Product: {request.product}
+REQUIRED CONTRACT STRUCTURE:
+1. Title: "# SUPPLY AGREEMENT" (as H1 header)
+2. Preamble/Header section with contract date and parties
+3. Recitals section (WHEREAS clauses)
+4. Definitions section (if needed)
+5. Main body sections covering all provided details
+6. Standard legal clauses (Termination, Governing Law, Dispute Resolution, etc.)
+7. Signature section
 
-Annual Volume: {request.annual_volume}
+CONTRACT DETAILS TO INCORPORATE:
+- Supplier Name: {request.supplier_name}
+- Product: {request.product}
+- Annual Volume: {request.annual_volume}
+- Delivery Terms: {request.delivery}
+- Pricing: {request.pricing}
+- Payment Terms: {request.payment_terms}
+- Contract Duration: {request.contract_duration}
+- Quality Standards: {request.quality_standards}
+- Warranty: {request.warranty}
+- Compliance Requirements: {request.compliance}
+- Risk Requirements: {request.risk_requirements}
+- Additional Clauses: {request.additional_clauses}
 
-Delivery: {request.delivery}
+OUTPUT FORMAT:
+Generate ONLY the contract document in markdown format. The output should:
+- Start with "# SUPPLY AGREEMENT" as the main title
+- Include all standard contract sections (Parties, Recitals, Terms, Conditions, etc.)
+- Use proper markdown syntax for headers, bold text, lists, and formatting
+- Be comprehensive and professional, mimicking a real legal contract
+- End with signature blocks for both parties
+- Do NOT include any explanatory text, notes, or compliance summaries - ONLY the contract document itself
 
-Pricing: {request.pricing}
+Example structure:
+# SUPPLY AGREEMENT
 
-Payment Terms: {request.payment_terms}
+## 1. PARTIES
+[Supplier and Buyer information]
 
-Contract Duration: {request.contract_duration}
+## 2. RECITALS
+[Background information]
 
-Quality Standards: {request.quality_standards}
+## 3. DEFINITIONS
+[Key terms]
 
-Warranty: {request.warranty}
+## 4. PRODUCT AND SUPPLY TERMS
+[Product details, volume, specifications]
 
-Compliance: {request.compliance}
+## 5. DELIVERY TERMS
+[Delivery requirements]
 
-Risk Requirements: {request.risk_requirements}
+## 6. PRICING AND PAYMENT
+[Pricing structure and payment terms]
 
-Additional Clauses: {request.additional_clauses}
+[Continue with all other sections...]
 
-Please generate the full Supply Agreement Contract and then provide a compliance check summary."""
+Generate the complete contract now:"""
     
     return prompt
 
