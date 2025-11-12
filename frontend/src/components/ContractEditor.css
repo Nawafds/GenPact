@@ -5,7 +5,7 @@
   background: var(--bg-primary);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 24px var(--shadow-blue);
+  box-shadow: 0 8px 24px var(--shadow);
   border: 1px solid var(--border-color);
 }
 
@@ -15,35 +15,58 @@
   align-items: center;
   padding: 1.25rem 1.5rem;
   border-bottom: 2px solid var(--border-color);
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+  background: var(--bg-primary);
 }
 
 .editor-header h3 {
   margin: 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.2rem;
   font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.download-button {
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.toggle-button {
   padding: 0.6rem 1.2rem;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+}
+
+.toggle-button:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.download-button {
+  padding: 0.6rem 1.2rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 .download-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.7);
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--shadow);
 }
 
 .contract-textarea {
@@ -67,5 +90,147 @@
 .contract-textarea::placeholder {
   color: var(--text-tertiary);
   opacity: 0.7;
+}
+
+.contract-markdown {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.8;
+  font-size: 1rem;
+}
+
+.contract-markdown h1,
+.contract-markdown h2,
+.contract-markdown h3,
+.contract-markdown h4,
+.contract-markdown h5,
+.contract-markdown h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.contract-markdown h1 {
+  font-size: 2em;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 0.5em;
+}
+
+.contract-markdown h2 {
+  font-size: 1.75em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.4em;
+}
+
+.contract-markdown h3 {
+  font-size: 1.5em;
+}
+
+.contract-markdown h4 {
+  font-size: 1.25em;
+}
+
+.contract-markdown h5 {
+  font-size: 1.1em;
+}
+
+.contract-markdown h6 {
+  font-size: 1em;
+}
+
+.contract-markdown p {
+  margin-bottom: 1em;
+}
+
+.contract-markdown strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.contract-markdown em {
+  font-style: italic;
+}
+
+.contract-markdown ul,
+.contract-markdown ol {
+  margin-bottom: 1em;
+  padding-left: 2em;
+}
+
+.contract-markdown li {
+  margin-bottom: 0.5em;
+}
+
+.contract-markdown blockquote {
+  margin: 1em 0;
+  padding-left: 1.5em;
+  border-left: 4px solid var(--primary-color);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.contract-markdown code {
+  background: var(--bg-secondary);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  color: var(--primary-color);
+}
+
+.contract-markdown pre {
+  background: var(--bg-secondary);
+  padding: 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 1em;
+  border: 1px solid var(--border-color);
+}
+
+.contract-markdown pre code {
+  background: transparent;
+  padding: 0;
+  color: var(--text-primary);
+}
+
+.contract-markdown hr {
+  border: none;
+  border-top: 2px solid var(--border-color);
+  margin: 2em 0;
+}
+
+.contract-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+}
+
+.contract-markdown th,
+.contract-markdown td {
+  padding: 0.75em;
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.contract-markdown th {
+  background: var(--bg-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.contract-markdown a {
+  color: var(--primary-color);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.contract-markdown a:hover {
+  border-bottom-color: var(--primary-color);
 }
 

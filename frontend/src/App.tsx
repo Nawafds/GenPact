@@ -4,6 +4,7 @@ import ContractEditor from './components/ContractEditor';
 import LLMHelper from './components/LLMHelper';
 import { generateContractAPI } from './utils/api';
 import type { ContractInputs } from './types/contract';
+import GenPactLogo from './assets/GenPact.svg';
 import './App.css';
 
 type ViewMode = 'input' | 'editor';
@@ -39,7 +40,10 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Contract Generator Platform</h1>
+        <div className="app-header-content">
+          <img src={GenPactLogo} alt="GenPact" className="app-header-logo" />
+          <h1>GenPact</h1>
+        </div>
         {viewMode === 'editor' && (
           <button onClick={handleBackToInput} className="back-button">
             ← Create New Contract
@@ -51,15 +55,7 @@ function App() {
         {viewMode === 'input' ? (
           <>
             {error && (
-              <div className="error-message" style={{
-                maxWidth: '900px',
-                margin: '0 auto 1rem',
-                padding: '1rem',
-                backgroundColor: '#fee',
-                border: '2px solid #fcc',
-                borderRadius: '8px',
-                color: '#c33',
-              }}>
+              <div className="error-message">
                 <strong>Error:</strong> {error}
               </div>
             )}

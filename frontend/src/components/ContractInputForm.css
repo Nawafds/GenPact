@@ -4,21 +4,17 @@
   padding: 2.5rem;
   background: var(--bg-primary);
   border-radius: 16px;
-  box-shadow: 0 12px 32px var(--shadow-blue);
+  box-shadow: 0 12px 32px var(--shadow);
   border: 2px solid var(--border-color);
 }
 
 .contract-input-form h2 {
   margin-top: 0;
   margin-bottom: 2rem;
-  color: var(--primary-color);
+  color: var(--text-primary);
   font-size: 2.25rem;
   font-weight: 700;
   text-align: center;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .form-section {
@@ -81,7 +77,7 @@
 .form-group textarea:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px var(--shadow-blue);
+  box-shadow: 0 0 0 3px var(--shadow);
   background: var(--bg-secondary);
 }
 
@@ -95,27 +91,27 @@
   padding: 1.125rem;
   font-size: 1.15rem;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+  background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
   margin-top: 1.5rem;
-  box-shadow: 0 4px 16px var(--shadow-blue);
+  box-shadow: 0 4px 16px var(--shadow);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .submit-button:hover {
-  background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-color) 100%);
+  background: var(--primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--shadow-blue-hover);
+  box-shadow: 0 8px 24px var(--shadow-hover);
 }
 
 .submit-button:active {
   transform: translateY(0);
-  box-shadow: 0 4px 12px var(--shadow-blue);
+  box-shadow: 0 4px 12px var(--shadow);
 }
 
 .submit-button:disabled {
@@ -126,7 +122,7 @@
 
 .submit-button:disabled:hover {
   transform: none;
-  box-shadow: 0 4px 16px var(--shadow-blue);
+  box-shadow: 0 4px 16px var(--shadow);
 }
 
 @media (max-width: 768px) {

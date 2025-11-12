@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { jsPDF } from 'jspdf';
+import ReactMarkdown from 'react-markdown';
 import './ContractEditor.css';
 
 interface ContractEditorProps {
@@ -7,6 +9,8 @@ interface ContractEditorProps {
 }
 
 export default function ContractEditor({ contract, onContractChange }: ContractEditorProps) {
+  const [isEditMode, setIsEditMode] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onContractChange(e.target.value);
   };
@@ -103,16 +107,30 @@ export default function ContractEditor({ contract, onContractChange }: ContractE
     <div className="contract-editor">
       <div className="editor-header">
         <h3>Contract Editor</h3>
-        <button onClick={handleDownload} className="download-button">
-          Download Contract
-        </button>
+        <div className="header-actions">
+          <button 
+            onClick={() => setIsEditMode(!isEditMode)} 
+            className="toggle-button"
+          >
+            {isEditMode ? '👁️ View' : '✏️ Edit'}
+          </button>
+          <button onClick={handleDownload} className="download-button">
+            Download Contract
+          </button>
+        </div>
       </div>
-      <textarea
-        className="contract-textarea"
-        value={contract}
-        onChange={handleChange}
-        placeholder="Contract content will appear here..."
-      />
+      {isEditMode ? (
+        <textarea
+          className="contract-textarea"
+          value={contract}
+          onChange={handleChange}
+          placeholder="Contract content will appear here..."
+        />
+      ) : (
+        <div className="contract-markdown">
+          <ReactMarkdown>{contract || 'No contract content available.'}</ReactMarkdown>
+        </div>
+      )}
     </div>
   );
 }
