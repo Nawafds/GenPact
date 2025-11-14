@@ -26,6 +26,16 @@ export default function ContractEditor({ contract, onContractChange, onSectionSe
   // Parse contract into sections
   const sections = useMemo(() => parseContractSections(contract), [contract]);
   
+  // Identify the title section (first section, typically level 1)
+  const titleSectionIndex = useMemo(() => {
+    if (sections.length === 0) return null;
+    // Find first section with level 1, or just the first section
+    const level1Index = sections.findIndex(s => s.level === 1);
+    return level1Index !== -1 ? level1Index : 0;
+  }, [sections]);
+  
+  const isTitleSection = (index: number) => index === titleSectionIndex;
+  
   // Clear selection when contract changes significantly
   useEffect(() => {
     if (selectedSectionIndex !== null && selectedSectionIndex >= sections.length) {
@@ -68,6 +78,10 @@ export default function ContractEditor({ contract, onContractChange, onSectionSe
   }, [editingSectionIndex]);
 
   const handleStartEditSection = (section: ContractSection, index: number) => {
+    // Don't allow editing the title section
+    if (isTitleSection(index)) {
+      return;
+    }
     // Allow editing even if section is selected
     setEditingSectionIndex(index);
     setEditingSectionBody(section.body);
@@ -87,6 +101,11 @@ export default function ContractEditor({ contract, onContractChange, onSectionSe
   };
 
   const handleSaveSection = (section: ContractSection, index: number) => {
+    // Prevent saving the title section
+    if (isTitleSection(index)) {
+      return;
+    }
+    
     // Save current scroll position before making changes
     if (markdownRef.current) {
       savedScrollPositionRef.current = markdownRef.current.scrollTop;
@@ -210,6 +229,11 @@ export default function ContractEditor({ contract, onContractChange, onSectionSe
   };
 
   const handleSectionClick = (section: ContractSection, index: number, e: React.MouseEvent) => {
+    // Don't allow selecting the title section
+    if (isTitleSection(index)) {
+      return;
+    }
+    
     e.stopPropagation();
     // Clear any text selection
     window.getSelection()?.removeAllRanges();
@@ -515,8 +539,12 @@ export default function ContractEditor({ contract, onContractChange, onSectionSe
           sections.map((section, index) => (
             <div
               key={index}
-              className={`contract-section ${selectedSectionIndex === index ? 'selected' : ''} ${editingSectionIndex === index ? 'editing' : ''}`}
+              className={`contract-section ${selectedSectionIndex === index ? 'selected' : ''} ${editingSectionIndex === index ? 'editing' : ''} ${isTitleSection(index) ? 'title-section' : ''}`}
               onClick={(e) => {
+                // Don't allow selection of title section
+                if (isTitleSection(index)) {
+                  return;
+                }
                 // Don't trigger section selection when clicking edit buttons or header actions
                 if ((e.target as HTMLElement).closest('.section-edit-actions') ||
                     (e.target as HTMLElement).closest('.section-header-actions') ||
@@ -554,16 +582,23 @@ export default function ContractEditor({ contract, onContractChange, onSectionSe
                     </div>
                   ) : (
                     <>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartEditSection(section, index);
-                        }}
-                        className="edit-section-btn"
-                      >
-                        ✏️ Edit
-                      </button>
-                      <span className="section-select-hint">Click to select for AI assistance</span>
+                      {!isTitleSection(index) && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEditSection(section, index);
+                            }}
+                            className="edit-section-btn"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <span className="section-select-hint">Click to select for AI assistance</span>
+                        </>
+                      )}
+                      {isTitleSection(index) && (
+                        <span className="section-select-hint title-hint">Title section (not editable or selectable)</span>
+                      )}
                     </>
                   )}
                 </div>
