@@ -26,11 +26,14 @@ app.add_middleware(
 # Request model for contract generation
 class SupplyAgreementRequest(BaseModel):
     supplier_name: str
+    supplier_address: str
     buyer_name: str
+    buyer_address: str
     product: str
     annual_volume: str
     delivery: str
     pricing: str
+    pricing_currency: str  # [X] for pricing currency symbol
     payment_terms: str
     contract_duration: str
     quality_standards: str
@@ -38,6 +41,8 @@ class SupplyAgreementRequest(BaseModel):
     compliance: str
     risk_requirements: str
     additional_clauses: str
+    governing_law_state_country: str  # State/Country for governing law
+    arbitration_association: str  # Arbitration Association
     index_name: Optional[List[str]] = ["1762885457669_uat_contracts"]
 
 # Request model for general queries (keeping for backward compatibility)
@@ -148,11 +153,14 @@ REQUIRED CONTRACT STRUCTURE:
 
 CONTRACT DETAILS TO INCORPORATE:
 - Supplier Name: {request.supplier_name}
+- Supplier Address: {request.supplier_address}
 - Buyer Name: {request.buyer_name}
+- Buyer Address: {request.buyer_address}
 - Product: {request.product}
 - Annual Volume: {request.annual_volume}
 - Delivery Terms: {request.delivery}
 - Pricing: {request.pricing}
+- Pricing Currency: {request.pricing_currency}
 - Payment Terms: {request.payment_terms}
 - Contract Duration: {request.contract_duration}
 - Quality Standards: {request.quality_standards}
@@ -160,6 +168,8 @@ CONTRACT DETAILS TO INCORPORATE:
 - Compliance Requirements: {request.compliance}
 - Risk Requirements: {request.risk_requirements}
 - Additional Clauses: {request.additional_clauses}
+- Governing Law State/Country: {request.governing_law_state_country}
+- Arbitration Association: {request.arbitration_association}
 
 OUTPUT FORMAT:
 Generate ONLY the contract document in markdown format. The output should:

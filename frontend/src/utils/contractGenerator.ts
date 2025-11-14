@@ -14,10 +14,12 @@ This Supply Agreement ("Agreement") is entered into on ${currentDate} ("Effectiv
 
 SUPPLIER:
 ${inputs.supplier_name}
+${inputs.supplier_address}
 (hereinafter referred to as "Supplier")
 
 BUYER:
 ${inputs.buyer_name}
+${inputs.buyer_address}
 (hereinafter referred to as "Buyer")
 
 Supplier and Buyer may be referred to individually as a "Party" or collectively as the "Parties."
@@ -37,6 +39,7 @@ ${inputs.delivery}
 3. PRICING
 
 ${inputs.pricing}
+Pricing Currency: ${inputs.pricing_currency}
 
 4. PAYMENT TERMS
 
@@ -72,11 +75,11 @@ Either Party may terminate this Agreement in accordance with the terms specified
 
 12. GOVERNING LAW
 
-This Agreement shall be governed by and construed in accordance with the laws of the jurisdiction in which the Buyer is located, without regard to its conflict of law principles.
+This Agreement shall be governed by and construed in accordance with the laws of ${inputs.governing_law_state_country}, without regard to its conflict of law principles.
 
 13. DISPUTE RESOLUTION
 
-Any disputes arising out of or relating to this Agreement shall be resolved through good faith negotiations between the Parties. If the Parties cannot resolve the dispute through negotiations, they agree to submit to binding arbitration.
+Any disputes arising out of or relating to this Agreement shall be resolved through good faith negotiations between the Parties. If the Parties cannot resolve the dispute through negotiations, they agree to submit to binding arbitration administered by ${inputs.arbitration_association}.
 
 14. ENTIRE AGREEMENT
 

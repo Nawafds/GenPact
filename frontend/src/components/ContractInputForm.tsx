@@ -13,11 +13,14 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
   const [currentStep, setCurrentStep] = useState(1);
   const [inputs, setInputs] = useState<ContractInputs>({
     supplier_name: '',
+    supplier_address: '',
     buyer_name: '',
+    buyer_address: '',
     product: '',
     annual_volume: '',
     delivery: '',
     pricing: '',
+    pricing_currency: '',
     payment_terms: '',
     contract_duration: '',
     quality_standards: '',
@@ -25,6 +28,8 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
     compliance: '',
     risk_requirements: '',
     additional_clauses: '',
+    governing_law_state_country: '',
+    arbitration_association: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -70,6 +75,18 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
               />
             </div>
             <div className="form-group">
+              <label htmlFor="supplier_address">Supplier Address *</label>
+              <textarea
+                id="supplier_address"
+                name="supplier_address"
+                value={inputs.supplier_address}
+                onChange={handleChange}
+                rows={2}
+                required
+                placeholder="e.g., 123 Industrial Blvd, San Jose, CA 95110"
+              />
+            </div>
+            <div className="form-group">
               <label htmlFor="buyer_name">Buyer Name *</label>
               <input
                 type="text"
@@ -79,6 +96,18 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
                 onChange={handleChange}
                 required
                 placeholder="e.g., Apex Robotics"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="buyer_address">Buyer Address *</label>
+              <textarea
+                id="buyer_address"
+                name="buyer_address"
+                value={inputs.buyer_address}
+                onChange={handleChange}
+                rows={2}
+                required
+                placeholder="e.g., 456 Tech Park Drive, Austin, TX 78701"
               />
             </div>
             <div className="form-group">
@@ -142,6 +171,18 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
               />
             </div>
             <div className="form-group">
+              <label htmlFor="pricing_currency">Pricing Currency *</label>
+              <input
+                type="text"
+                id="pricing_currency"
+                name="pricing_currency"
+                value={inputs.pricing_currency}
+                onChange={handleChange}
+                required
+                placeholder="e.g., USD, EUR, GBP"
+              />
+            </div>
+            <div className="form-group">
               <label htmlFor="payment_terms">Payment Terms *</label>
               <input
                 type="text"
@@ -169,6 +210,30 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
                 onChange={handleChange}
                 required
                 placeholder="e.g., 2 years with optional 1-year renewal"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="governing_law_state_country">Governing Law State/Country *</label>
+              <input
+                type="text"
+                id="governing_law_state_country"
+                name="governing_law_state_country"
+                value={inputs.governing_law_state_country}
+                onChange={handleChange}
+                required
+                placeholder="e.g., California, USA or England and Wales"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="arbitration_association">Arbitration Association *</label>
+              <input
+                type="text"
+                id="arbitration_association"
+                name="arbitration_association"
+                value={inputs.arbitration_association}
+                onChange={handleChange}
+                required
+                placeholder="e.g., American Arbitration Association (AAA), International Chamber of Commerce (ICC)"
               />
             </div>
           </div>
