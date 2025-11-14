@@ -596,9 +596,9 @@ export default function ContractEditor({ contract, onContractChange, onSectionSe
                           <span className="section-select-hint">Click to select for AI assistance</span>
                         </>
                       )}
-                      {isTitleSection(index) && (
+                      {/* {isTitleSection(index) && (
                         <span className="section-select-hint title-hint">Title section (not editable or selectable)</span>
-                      )}
+                      )} */}
                     </>
                   )}
                 </div>
