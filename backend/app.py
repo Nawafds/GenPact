@@ -45,6 +45,13 @@ class QuestionRequest(BaseModel):
     question_body: str
     index_name: Optional[List[str]] = ["1762885457669_uat_contracts"]
 
+# Request model for conversational LLM helper
+class LLMHelperRequest(BaseModel):
+    title: str
+    body: str
+    user_prompt: str
+    index_name: Optional[List[str]] = ["1763159365603_uat_llama"]
+
 # External API configuration
 EXTERNAL_API_URL = os.getenv("EXTERNAL_API_URL")
 STREAM_API_URL = os.getenv("STREAM_API_URL")
@@ -187,6 +194,25 @@ Example structure:
 [Continue with all other sections...]
 
 Generate the complete contract now:"""
+    
+    return prompt
+
+def construct_llm_helper_prompt(request: LLMHelperRequest) -> str:
+    """
+    Constructs a simplified prompt for the LLM helper focused on summarizing and rephrasing.
+    """
+    prompt = f"""You are a helpful assistant that helps users with contract sections by provided.
+
+CONTRACT SECTION:
+- Title: {request.title}
+- Body: {request.body}
+
+USER REQUEST:
+{request.user_prompt}
+
+Please address the user's specific request above while providing assistance with the contract section.
+
+"""
     
     return prompt
 
@@ -339,6 +365,76 @@ async def query(request: QuestionRequest):
         json_response = json.loads(response.text)
         answer_body = json_response["data"]["answer_body"]
         return {"llm_response": answer_body}
+        
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"External API error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.post("/llm-helper-stream")
+async def llm_helper_stream(request: LLMHelperRequest):
+    """
+    Endpoint that accepts a contract section (title and body) and streams conversational
+    LLM assistance via LLM API. Returns a streaming response for real-time interaction.
+    """
+    try:
+        # Construct the prompt from section details
+        prompt = construct_llm_helper_prompt(request)
+
+        # Prepare payload matching the API structure
+        payload = {
+            "question_body": prompt,
+            "index_name": ["1756932820609_uat_osha"]
+        }
+        
+        # Get access token
+        auth_token = get_access_token()
+        
+        # Prepare headers
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream',
+            'Authorization': auth_token
+        }
+        
+        # Make streaming request to external API
+        response = requests.post(
+            STREAM_API_URL,
+            headers=headers,
+            data=json.dumps(payload),
+            stream=True
+        )
+        
+        # Check if request was successful
+        response.raise_for_status()
+        
+        def generate():
+            """
+            Generator function that yields chunks from the streaming response.
+            Handles Server-Sent Events (SSE) format.
+            """
+            try:
+                # Stream the response chunk by chunk
+                for chunk in response.iter_content(chunk_size=None):
+                    if chunk:
+                        yield chunk
+            except Exception as e:
+                # Log error but don't raise to avoid breaking the stream
+                error_msg = f"\n\n[Error during streaming: {str(e)}]"
+                yield error_msg.encode('utf-8')
+            finally:
+                # Ensure response is closed
+                response.close()
+        
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
         
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"External API error: {str(e)}")

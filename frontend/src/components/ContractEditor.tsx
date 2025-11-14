@@ -1,36 +1,264 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { jsPDF } from 'jspdf';
 import ReactMarkdown from 'react-markdown';
+import { parseContractSections, type ContractSection } from '../utils/sectionParser';
 import './ContractEditor.css';
 
 interface ContractEditorProps {
   contract: string;
   onContractChange: (contract: string) => void;
+  onSectionSelect?: (title: string, body: string) => void;
+  onReplaceText?: (callback: (oldText: string, newText: string) => void) => void;
 }
 
-export default function ContractEditor({ contract, onContractChange }: ContractEditorProps) {
-  const [isEditMode, setIsEditMode] = useState(false);
+export default function ContractEditor({ contract, onContractChange, onSectionSelect, onReplaceText }: ContractEditorProps) {
+  const [selectedText, setSelectedText] = useState<string>('');
+  const [selectedRange, setSelectedRange] = useState<{ start: number; end: number } | null>(null);
+  const [selectedSectionIndex, setSelectedSectionIndex] = useState<number | null>(null);
+  const [editingSectionIndex, setEditingSectionIndex] = useState<number | null>(null);
+  const [editingSectionBody, setEditingSectionBody] = useState<string>('');
+  const [currentSection, setCurrentSection] = useState<ContractSection | null>(null);
   const markdownRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sectionTextareaRefs = useRef<Map<number, HTMLTextAreaElement>>(new Map());
+  const isSavingRef = useRef<boolean>(false);
+  const savedScrollPositionRef = useRef<number>(0);
   
-  // Auto-scroll to bottom when contract content changes (for streaming)
+  // Parse contract into sections
+  const sections = useMemo(() => parseContractSections(contract), [contract]);
+  
+  // Clear selection when contract changes significantly
   useEffect(() => {
-    if (contract && !isEditMode) {
-      // Scroll markdown view to bottom
+    if (selectedSectionIndex !== null && selectedSectionIndex >= sections.length) {
+      setSelectedSectionIndex(null);
+      setCurrentSection(null);
+      setSelectedText('');
+      setSelectedRange(null);
+    } else if (selectedSectionIndex !== null && currentSection) {
+      // Update current section reference if sections were re-parsed
+      const updatedSection = sections[selectedSectionIndex];
+      if (updatedSection && updatedSection.title === currentSection.title) {
+        setCurrentSection(updatedSection);
+      }
+    }
+  }, [contract, sections, selectedSectionIndex, currentSection]);
+  
+  // Auto-scroll to bottom when contract content changes (for streaming only, not when saving)
+  useEffect(() => {
+    if (contract && editingSectionIndex === null && !isSavingRef.current) {
+      // Only auto-scroll if we're not saving (i.e., during streaming)
       if (markdownRef.current) {
         markdownRef.current.scrollTop = markdownRef.current.scrollHeight;
       }
-    } else if (contract && isEditMode) {
-      // Scroll textarea to bottom
-      if (textareaRef.current) {
-        textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+    } else if (isSavingRef.current && markdownRef.current) {
+      // Restore scroll position after saving
+      markdownRef.current.scrollTop = savedScrollPositionRef.current;
+      isSavingRef.current = false;
+    }
+  }, [contract, editingSectionIndex]);
+  
+  // Focus textarea when section enters edit mode
+  useEffect(() => {
+    if (editingSectionIndex !== null) {
+      const textarea = sectionTextareaRefs.current.get(editingSectionIndex);
+      if (textarea) {
+        textarea.focus();
+        textarea.scrollTop = 0;
       }
     }
-  }, [contract, isEditMode]);
+  }, [editingSectionIndex]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onContractChange(e.target.value);
+  const handleStartEditSection = (section: ContractSection, index: number) => {
+    // Allow editing even if section is selected
+    setEditingSectionIndex(index);
+    setEditingSectionBody(section.body);
+    // Optionally keep the section selected for AI assistance
+    // The section can be both selected and edited simultaneously
   };
+
+  const handleCancelEditSection = () => {
+    // Save current scroll position before canceling
+    if (markdownRef.current) {
+      savedScrollPositionRef.current = markdownRef.current.scrollTop;
+    }
+    isSavingRef.current = true;
+    
+    setEditingSectionIndex(null);
+    setEditingSectionBody('');
+  };
+
+  const handleSaveSection = (section: ContractSection, index: number) => {
+    // Save current scroll position before making changes
+    if (markdownRef.current) {
+      savedScrollPositionRef.current = markdownRef.current.scrollTop;
+    }
+    isSavingRef.current = true;
+    
+    if (!currentSection || currentSection.title !== section.title) {
+      // Update current section reference
+      setCurrentSection(section);
+    }
+    
+    // Find the header line within the section
+    const sectionText = contract.substring(section.startIndex, section.endIndex);
+    const lines = sectionText.split('\n');
+    
+    // Find where the header ends (first line is the header)
+    let headerEndIndex = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      
+      // Check if this is the section header
+      if (trimmedLine.match(/^(#{1,6})\s+(.+)$/)) {
+        const headerText = trimmedLine.replace(/^#+\s+/, '').trim();
+        if (headerText === section.title || i === 0) {
+          // Header ends after this line
+          headerEndIndex = line.length + 1; // +1 for newline
+          break;
+        }
+      }
+    }
+    
+    // Calculate absolute positions
+    const bodyStartIndex = section.startIndex + headerEndIndex;
+    const bodyEndIndex = section.endIndex;
+    
+    // Replace only the body portion (keep header intact)
+    const beforeSection = contract.substring(0, bodyStartIndex);
+    const afterSection = contract.substring(bodyEndIndex);
+    
+    // Ensure newText doesn't have extra newlines at start/end
+    const cleanNewBody = editingSectionBody.trim();
+    
+    // Replace the body with the new text
+    const newContract = beforeSection + cleanNewBody + (afterSection ? '\n' + afterSection : '');
+    onContractChange(newContract);
+    
+    // If this section is currently selected, update the selection with new body
+    if (selectedSectionIndex === index && onSectionSelect) {
+      onSectionSelect(section.title, cleanNewBody);
+      setSelectedText(cleanNewBody);
+    }
+    
+    // Exit edit mode
+    setEditingSectionIndex(null);
+    setEditingSectionBody('');
+  };
+
+  // Expose replace function to parent
+  useEffect(() => {
+    if (onReplaceText) {
+      onReplaceText((oldText: string, newText: string) => {
+        // If we have a current section, replace only within that section's body
+        if (currentSection) {
+          // Find the header line within the section
+          const sectionText = contract.substring(currentSection.startIndex, currentSection.endIndex);
+          const lines = sectionText.split('\n');
+          
+          // Find where the header ends (first line is the header)
+          let headerEndIndex = 0;
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmedLine = line.trim();
+            
+            // Check if this is the section header
+            if (trimmedLine.match(/^(#{1,6})\s+(.+)$/)) {
+              const headerText = trimmedLine.replace(/^#+\s+/, '').trim();
+              if (headerText === currentSection.title || i === 0) {
+                // Header ends after this line
+                headerEndIndex = line.length + 1; // +1 for newline
+                break;
+              }
+            }
+          }
+          
+          // Calculate absolute positions
+          const bodyStartIndex = currentSection.startIndex + headerEndIndex;
+          const bodyEndIndex = currentSection.endIndex;
+          
+          // Replace only the body portion (keep header intact)
+          const beforeSection = contract.substring(0, bodyStartIndex);
+          const afterSection = contract.substring(bodyEndIndex);
+          
+          // Ensure newText doesn't have extra newlines at start/end
+          const cleanNewText = newText.trim();
+          
+          // Replace the body with the new text
+          const newContract = beforeSection + cleanNewText + (afterSection ? '\n' + afterSection : '');
+          onContractChange(newContract);
+          
+          // Update the selected section to reflect the change
+          setSelectedText(cleanNewText);
+        } else if (selectedRange) {
+          // Fallback: use selected range if available
+          const newContract = contract.substring(0, selectedRange.start) + newText + contract.substring(selectedRange.end);
+          onContractChange(newContract);
+          setSelectedRange(null);
+          setSelectedText('');
+        } else if (oldText && contract.includes(oldText)) {
+          // Last resort: search and replace (but warn this might affect multiple sections)
+          const newContract = contract.replace(oldText, newText);
+          onContractChange(newContract);
+          setSelectedText('');
+        }
+      });
+    }
+  }, [onReplaceText, contract, selectedRange, currentSection, onContractChange]);
+
+  const handleSectionBodyChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditingSectionBody(e.target.value);
+  };
+
+  const handleSectionClick = (section: ContractSection, index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Clear any text selection
+    window.getSelection()?.removeAllRanges();
+    
+    setSelectedSectionIndex(index);
+    setCurrentSection(section);
+    setSelectedText(section.body);
+    setSelectedRange({ start: section.startIndex, end: section.endIndex });
+    
+    if (onSectionSelect) {
+      onSectionSelect(section.title, section.body);
+    }
+  };
+
+  const handleTextSelection = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      // Don't clear section selection on empty selection
+      return;
+    }
+
+    const selectedTextValue = selection.toString().trim();
+    if (!selectedTextValue) {
+      return;
+    }
+
+    // If user selected text within a section, update to use that specific text
+    // but keep the section context
+    setSelectedText(selectedTextValue);
+    
+    // Try to find the position in the original markdown text
+    const startIndex = contract.indexOf(selectedTextValue);
+    const endIndex = startIndex + selectedTextValue.length;
+    
+    if (startIndex !== -1) {
+      setSelectedRange({ start: startIndex, end: endIndex });
+      
+      // Find which section contains this selection
+      const containingSection = sections.find(
+        section => startIndex >= section.startIndex && startIndex < section.endIndex
+      );
+      
+      // If text is selected within a section, use that section's title but the selected text as body
+      if (containingSection && onSectionSelect) {
+        onSectionSelect(containingSection.title, selectedTextValue);
+      }
+    }
+  };
+
 
   const handleDownload = () => {
     const doc = new jsPDF();
@@ -272,30 +500,100 @@ export default function ContractEditor({ contract, onContractChange }: ContractE
       <div className="editor-header">
         <h3>Contract Editor</h3>
         <div className="header-actions">
-          <button 
-            onClick={() => setIsEditMode(!isEditMode)} 
-            className="toggle-button"
-          >
-            {isEditMode ? '👁️ View' : '✏️ Edit'}
-          </button>
           <button onClick={handleDownload} className="download-button">
             Download Contract
           </button>
         </div>
       </div>
-      {isEditMode ? (
-        <textarea
-          ref={textareaRef}
-          className="contract-textarea"
-          value={contract}
-          onChange={handleChange}
-          placeholder="Contract content will appear here..."
-        />
-      ) : (
-        <div ref={markdownRef} className="contract-markdown">
+      <div 
+        ref={markdownRef} 
+        className="contract-markdown"
+        onMouseUp={handleTextSelection}
+        onKeyUp={handleTextSelection}
+      >
+        {sections.length > 0 ? (
+          sections.map((section, index) => (
+            <div
+              key={index}
+              className={`contract-section ${selectedSectionIndex === index ? 'selected' : ''} ${editingSectionIndex === index ? 'editing' : ''}`}
+              onClick={(e) => {
+                // Don't trigger section selection when clicking edit buttons or header actions
+                if ((e.target as HTMLElement).closest('.section-edit-actions') ||
+                    (e.target as HTMLElement).closest('.section-header-actions') ||
+                    (e.target as HTMLElement).closest('.edit-section-btn')) {
+                  return;
+                }
+                handleSectionClick(section, index, e);
+              }}
+            >
+              <div className="section-header">
+                <h2 className={`section-title level-${section.level || 2}`}>
+                  {section.title}
+                </h2>
+                <div className="section-header-actions">
+                  {editingSectionIndex === index ? (
+                    <div className="section-edit-actions">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSaveSection(section, index);
+                        }}
+                        className="save-section-btn"
+                      >
+                        ✓ Save
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCancelEditSection();
+                        }}
+                        className="cancel-section-btn"
+                      >
+                        ✕ Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartEditSection(section, index);
+                        }}
+                        className="edit-section-btn"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <span className="section-select-hint">Click to select for AI assistance</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              {editingSectionIndex === index ? (
+                <textarea
+                  ref={(el) => {
+                    if (el) {
+                      sectionTextareaRefs.current.set(index, el);
+                    } else {
+                      sectionTextareaRefs.current.delete(index);
+                    }
+                  }}
+                  className="section-edit-textarea"
+                  value={editingSectionBody}
+                  onChange={handleSectionBodyChange}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="Edit section content..."
+                />
+              ) : (
+                <div className="section-content">
+                  <ReactMarkdown>{section.body}</ReactMarkdown>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
           <ReactMarkdown>{contract || 'No contract content available.'}</ReactMarkdown>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

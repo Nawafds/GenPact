@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import ContractInputForm from './components/ContractInputForm';
 import ContractEditor from './components/ContractEditor';
+import LLMHelper from './components/LLMHelper';
 import { generateContractStreamAPI } from './utils/api';
 import type { ContractInputs } from './types/contract';
 import GenPactLogo from './assets/GenPact.svg';
@@ -13,6 +14,8 @@ function App() {
   const [contract, setContract] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSection, setSelectedSection] = useState<{ title: string; body: string } | null>(null);
+  const replaceTextRef = useRef<((oldText: string, newText: string) => void) | null>(null);
 
   const handleFormSubmit = async (inputs: ContractInputs) => {
     setIsLoading(true);
@@ -90,12 +93,24 @@ function App() {
                 <strong>Error:</strong> {error}
               </div>
             )}
-            <div className="editor-panel">
-              <ContractEditor contract={contract} onContractChange={setContract} />
+            <div className={`editor-panel ${isLoading ? 'full-width' : ''}`}>
+              <ContractEditor 
+                contract={contract} 
+                onContractChange={setContract}
+                onSectionSelect={(title, body) => setSelectedSection({ title, body })}
+                onReplaceText={(callback) => {
+                  replaceTextRef.current = callback;
+                }}
+              />
             </div>
-            {/* <div className="helper-panel">
-              <LLMHelper contract={contract} />
-            </div> */}
+            {!isLoading && (
+              <div className="helper-panel">
+                <LLMHelper 
+                  contract={contract}
+                  selectedSection={selectedSection}
+                />
+              </div>
+            )}
           </div>
         )}
       </main>

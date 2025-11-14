@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { llmHelperStreamAPI } from '../utils/api';
 import './LLMHelper.css';
 
 interface Message {
@@ -8,18 +9,47 @@ interface Message {
 
 interface LLMHelperProps {
   contract: string;
+  selectedSection?: { title: string; body: string } | null;
 }
 
-export default function LLMHelper({ contract }: LLMHelperProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'Hello! I\'m your contract assistant. I can help you review, improve, or answer questions about your contract. How can I assist you today?',
-    },
-  ]);
+// Default welcome message
+const DEFAULT_WELCOME_MESSAGE: Message = {
+  role: 'assistant',
+  content: 'Hello! I\'m your contract assistant. Select a section of your contract, then ask me to help rephrase, improve, or explain it.',
+};
+
+export default function LLMHelper({ contract, selectedSection }: LLMHelperProps) {
+  // Store chat history per section using a Map
+  const [chatHistory, setChatHistory] = useState<Map<string, Message[]>>(new Map());
+  const [messages, setMessages] = useState<Message[]>([DEFAULT_WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [currentAssistantMessage, setCurrentAssistantMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Get the current section key (used as identifier for chat history)
+  const getSectionKey = (): string => {
+    return selectedSection?.title || 'general';
+  };
+
+  // Load messages for the current section when selectedSection changes
+  useEffect(() => {
+    const sectionKey = getSectionKey();
+    const sectionMessages = chatHistory.get(sectionKey);
+    
+    if (sectionMessages && sectionMessages.length > 0) {
+      // Load existing chat history for this section
+      setMessages(sectionMessages);
+    } else {
+      // Initialize with empty messages for new section, or default welcome for general
+      if (selectedSection) {
+        setMessages([]);
+      } else {
+        setMessages([DEFAULT_WELCOME_MESSAGE]);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSection?.title]); // Only reload when section changes, not when chatHistory updates
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -27,22 +57,112 @@ export default function LLMHelper({ contract }: LLMHelperProps) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, currentAssistantMessage]);
+
+  // Helper function to save messages to chat history
+  const saveMessagesToHistory = (sectionKey: string, newMessages: Message[]) => {
+    setChatHistory(prev => {
+      const newHistory = new Map(prev);
+      newHistory.set(sectionKey, newMessages);
+      return newHistory;
+    });
+  };
+
+  const handleAnalyzeSection = async (title: string, body: string) => {
+    setIsLoading(true);
+    setCurrentAssistantMessage('');
+    
+    const sectionKey = title;
+    const userPrompt = `Please analyze this section: ${title}`;
+    const userMessage: Message = { 
+      role: 'user', 
+      content: userPrompt
+    };
+    
+    setMessages(prev => {
+      const newMessages = [...prev, userMessage];
+      saveMessagesToHistory(sectionKey, newMessages);
+      return newMessages;
+    });
+
+    try {
+      let fullResponse = '';
+      await llmHelperStreamAPI(
+        { title, body, user_prompt: userPrompt },
+        (delta: string) => {
+          fullResponse += delta;
+          setCurrentAssistantMessage(fullResponse);
+        }
+      );
+      
+      // Move current message to messages array when complete
+      setMessages(prev => {
+        const newMessages = [...prev, { role: 'assistant', content: fullResponse }];
+        saveMessagesToHistory(sectionKey, newMessages);
+        return newMessages;
+      });
+      setCurrentAssistantMessage('');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get assistance. Please try again.';
+      setMessages(prev => {
+        const newMessages = [...prev, { role: 'assistant', content: `Error: ${errorMessage}` }];
+        saveMessagesToHistory(sectionKey, newMessages);
+        return newMessages;
+      });
+    } finally {
+      setIsLoading(false);
+      setCurrentAssistantMessage('');
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
+    const sectionKey = getSectionKey();
     const userMessage: Message = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
+    const userInput = input;
     setInput('');
     setIsLoading(true);
+    setCurrentAssistantMessage('');
 
-    // Simulate LLM response (replace with actual API call)
-    setTimeout(() => {
-      const response = generateMockResponse(input, contract);
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    setMessages(prev => {
+      const newMessages = [...prev, userMessage];
+      saveMessagesToHistory(sectionKey, newMessages);
+      return newMessages;
+    });
+
+    try {
+      // If there's a selected section, use it; otherwise use the full contract
+      const sectionTitle = selectedSection?.title || 'Contract';
+      const sectionBody = selectedSection?.body || contract;
+
+      let fullResponse = '';
+      await llmHelperStreamAPI(
+        { title: sectionTitle, body: sectionBody, user_prompt: userInput },
+        (delta: string) => {
+          fullResponse += delta;
+          setCurrentAssistantMessage(fullResponse);
+        }
+      );
+      
+      // Move current message to messages array when complete
+      setMessages(prev => {
+        const newMessages = [...prev, { role: 'assistant', content: fullResponse }];
+        saveMessagesToHistory(sectionKey, newMessages);
+        return newMessages;
+      });
+      setCurrentAssistantMessage('');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get assistance. Please try again.';
+      setMessages(prev => {
+        const newMessages = [...prev, { role: 'assistant', content: `Error: ${errorMessage}` }];
+        saveMessagesToHistory(sectionKey, newMessages);
+        return newMessages;
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+      setCurrentAssistantMessage('');
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -73,11 +193,25 @@ export default function LLMHelper({ contract }: LLMHelperProps) {
     setInput(prompt);
   };
 
+
   return (
     <div className="llm-helper">
       <div className="helper-header">
         <h3>AI Contract Assistant</h3>
+        {selectedSection && (
+          <div className="selected-section-info">
+            <span className="section-badge">📄 {selectedSection.title}</span>
+          </div>
+        )}
         <div className="quick-actions">
+          {selectedSection && (
+            <button 
+              onClick={() => handleAnalyzeSection(selectedSection.title, selectedSection.body)} 
+              className="quick-action-btn"
+            >
+              Analyze Section
+            </button>
+          )}
           <button onClick={() => handleQuickAction('review')} className="quick-action-btn">
             Review
           </button>
@@ -98,7 +232,12 @@ export default function LLMHelper({ contract }: LLMHelperProps) {
             <div className="message-content">{message.content}</div>
           </div>
         ))}
-        {isLoading && (
+        {isLoading && currentAssistantMessage && (
+          <div className="message assistant">
+            <div className="message-content">{currentAssistantMessage}</div>
+          </div>
+        )}
+        {isLoading && !currentAssistantMessage && (
           <div className="message assistant">
             <div className="message-content">
               <div className="typing-indicator">
@@ -117,7 +256,7 @@ export default function LLMHelper({ contract }: LLMHelperProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyPress}
-          placeholder="Ask me anything about your contract..."
+          placeholder={selectedSection ? `Ask about "${selectedSection.title}"...` : "Select a section or ask me anything about your contract..."}
           rows={2}
         />
         <button onClick={handleSend} disabled={!input.trim() || isLoading} className="send-button">
@@ -128,76 +267,4 @@ export default function LLMHelper({ contract }: LLMHelperProps) {
   );
 }
 
-// Mock response generator (replace with actual LLM API call)
-function generateMockResponse(userInput: string, contract: string): string {
-  const lowerInput = userInput.toLowerCase();
-  
-  if (lowerInput.includes('review') || lowerInput.includes('issue') || lowerInput.includes('problem')) {
-    return `Based on my review of your contract, here are some observations:
-
-1. **Structure**: The contract follows a standard format with clear sections.
-
-2. **Recommendations**:
-   - Consider adding specific performance metrics or deliverables
-   - Include a force majeure clause for unforeseen circumstances
-   - Specify the jurisdiction and venue for legal disputes more clearly
-
-3. **Missing Elements**: 
-   - Intellectual property rights (if applicable)
-   - Confidentiality provisions (if needed)
-   - Dispute resolution timeline
-
-Would you like me to help draft any of these additions?`;
-  }
-  
-  if (lowerInput.includes('simplify') || lowerInput.includes('readable') || lowerInput.includes('plain')) {
-    return `I can help simplify the contract language. Here are some suggestions:
-
-- Replace legal jargon with plain language where possible
-- Break down complex sentences into shorter, clearer ones
-- Add headings and bullet points for better readability
-- Define technical terms when first introduced
-
-Would you like me to provide a simplified version of a specific section?`;
-  }
-  
-  if (lowerInput.includes('legal') || lowerInput.includes('obligation') || lowerInput.includes('liability')) {
-    return `Key legal aspects of your contract:
-
-**Obligations**: Both parties have mutual obligations to act in good faith and fulfill the terms.
-
-**Termination**: Either party can terminate with written notice, which provides flexibility.
-
-**Dispute Resolution**: The contract includes an arbitration clause, which can be faster and less expensive than litigation.
-
-**Recommendation**: Consider adding specific consequences for breach of contract and limitation of liability clauses.
-
-Should I help draft these provisions?`;
-  }
-  
-  if (lowerInput.includes('suggest') || lowerInput.includes('improve') || lowerInput.includes('strengthen')) {
-    return `Here are suggestions to strengthen your contract:
-
-1. **Add Specific Metrics**: Define clear, measurable deliverables
-2. **Payment Terms**: Include late payment penalties and payment method details
-3. **Confidentiality**: Add an NDA clause if sensitive information is involved
-4. **Termination Notice**: Specify the exact notice period required
-5. **Amendment Process**: Clarify how changes must be documented
-6. **Severability Clause**: Add a clause stating that if one part is invalid, the rest remains
-
-Which of these would you like to implement?`;
-  }
-  
-  // Default response
-  return `I understand you're asking about: "${userInput}"
-
-To provide the most accurate assistance, I can:
-- Review your contract for potential issues
-- Suggest improvements or additions
-- Explain legal terms and implications
-- Help simplify complex language
-- Answer specific questions about contract sections
-
-You can use the quick action buttons above or ask me directly. What would you like help with?`;
-}
 
