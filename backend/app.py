@@ -454,3 +454,7 @@ async def llm_helper_stream(request: LLMHelperRequest):
 @app.get("/")
 async def root():
     return {"message": "FastAPI backend for question queries"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8080)
