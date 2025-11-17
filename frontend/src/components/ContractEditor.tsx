@@ -12,7 +12,7 @@ interface ContractEditorProps {
 }
 
 export default function ContractEditor({ contract, onContractChange, onSectionSelect, onReplaceText }: ContractEditorProps) {
-  const [selectedText, setSelectedText] = useState<string>('');
+  const [_selectedText, setSelectedText] = useState<string>('');
   const [selectedRange, setSelectedRange] = useState<{ start: number; end: number } | null>(null);
   const [selectedSectionIndex, setSelectedSectionIndex] = useState<number | null>(null);
   const [editingSectionIndex, setEditingSectionIndex] = useState<number | null>(null);

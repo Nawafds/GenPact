@@ -75,12 +75,12 @@ export default function LLMHelper({ contract, selectedSection }: LLMHelperProps)
     const sectionKey = title;
     const userPrompt = `Please analyze this section: ${title}`;
     const userMessage: Message = { 
-      role: 'user', 
+      role: 'user' as const, 
       content: userPrompt
     };
     
     setMessages(prev => {
-      const newMessages = [...prev, userMessage];
+      const newMessages: Message[] = [...prev, userMessage];
       saveMessagesToHistory(sectionKey, newMessages);
       return newMessages;
     });
@@ -97,7 +97,7 @@ export default function LLMHelper({ contract, selectedSection }: LLMHelperProps)
       
       // Move current message to messages array when complete
       setMessages(prev => {
-        const newMessages = [...prev, { role: 'assistant', content: fullResponse }];
+        const newMessages: Message[] = [...prev, { role: 'assistant' as const, content: fullResponse }];
         saveMessagesToHistory(sectionKey, newMessages);
         return newMessages;
       });
@@ -105,7 +105,7 @@ export default function LLMHelper({ contract, selectedSection }: LLMHelperProps)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to get assistance. Please try again.';
       setMessages(prev => {
-        const newMessages = [...prev, { role: 'assistant', content: `Error: ${errorMessage}` }];
+        const newMessages: Message[] = [...prev, { role: 'assistant' as const, content: `Error: ${errorMessage}` }];
         saveMessagesToHistory(sectionKey, newMessages);
         return newMessages;
       });
@@ -119,14 +119,14 @@ export default function LLMHelper({ contract, selectedSection }: LLMHelperProps)
     if (!input.trim() || isLoading) return;
 
     const sectionKey = getSectionKey();
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { role: 'user' as const, content: input };
     const userInput = input;
     setInput('');
     setIsLoading(true);
     setCurrentAssistantMessage('');
 
     setMessages(prev => {
-      const newMessages = [...prev, userMessage];
+      const newMessages: Message[] = [...prev, userMessage];
       saveMessagesToHistory(sectionKey, newMessages);
       return newMessages;
     });
@@ -147,7 +147,7 @@ export default function LLMHelper({ contract, selectedSection }: LLMHelperProps)
       
       // Move current message to messages array when complete
       setMessages(prev => {
-        const newMessages = [...prev, { role: 'assistant', content: fullResponse }];
+        const newMessages: Message[] = [...prev, { role: 'assistant' as const, content: fullResponse }];
         saveMessagesToHistory(sectionKey, newMessages);
         return newMessages;
       });
@@ -155,7 +155,7 @@ export default function LLMHelper({ contract, selectedSection }: LLMHelperProps)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to get assistance. Please try again.';
       setMessages(prev => {
-        const newMessages = [...prev, { role: 'assistant', content: `Error: ${errorMessage}` }];
+        const newMessages: Message[] = [...prev, { role: 'assistant' as const, content: `Error: ${errorMessage}` }];
         saveMessagesToHistory(sectionKey, newMessages);
         return newMessages;
       });
