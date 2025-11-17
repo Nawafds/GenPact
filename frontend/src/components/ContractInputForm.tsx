@@ -56,12 +56,72 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
+  const fillDummyData = (step: number) => {
+    const dummyData: Partial<ContractInputs> = {};
+    
+    switch (step) {
+      case 1:
+        Object.assign(dummyData, {
+          supplier_name: 'PrimeTech Components Inc.',
+          supplier_address: '123 Industrial Blvd, San Jose, CA 95110, United States',
+          buyer_name: 'Apex Robotics Corporation',
+          buyer_address: '456 Tech Park Drive, Austin, TX 78701, United States',
+          product: 'Lidar Sensor Module, Model LX-420',
+        });
+        break;
+      case 2:
+        Object.assign(dummyData, {
+          annual_volume: '18,000 units',
+          delivery: 'Bi-weekly delivery to Apex Robotics Assembly Plant in San Jose, CA. Delivery must be completed within 2 business days of scheduled date.',
+        });
+        break;
+      case 3:
+        Object.assign(dummyData, {
+          pricing: 'Fixed price of $450 per unit for the first 6 months, then up to 3 percent adjustment every 6 months based on market conditions and material costs.',
+          pricing_currency: 'USD',
+          payment_terms: 'Net 45 days from invoice date',
+        });
+        break;
+      case 4:
+        Object.assign(dummyData, {
+          contract_duration: '2 years with optional 1-year renewal upon mutual agreement',
+          governing_law_state_country: 'California, USA',
+          arbitration_association: 'American Arbitration Association (AAA)',
+        });
+        break;
+      case 5:
+        Object.assign(dummyData, {
+          quality_standards: 'ISO 9001 certified manufacturing required. Failure rate must be below 0.5 percent per quarter. Two quality audits per year by independent third party.',
+          warranty: '12-month replacement warranty for defective units. Warranty covers manufacturing defects and material failures.',
+        });
+        break;
+      case 6:
+        Object.assign(dummyData, {
+          compliance: 'FCC Part 15 compliance required. Data-security compliance for firmware updates. Quarterly compliance reports must be submitted to buyer.',
+          risk_requirements: 'Late delivery penalties of 2% per day after 3 days delay. Supplier must hold minimum $2 million USD product liability insurance. Force majeure provisions apply.',
+        });
+        break;
+      case 7:
+        Object.assign(dummyData, {
+          additional_clauses: 'Confidentiality agreement for all technical specifications. IP protection for buyer\'s proprietary designs. Cybersecurity requirements for firmware updates. Termination with 60-day written notice by either party.',
+        });
+        break;
+    }
+    
+    setInputs(prev => ({ ...prev, ...dummyData }));
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
         return (
           <div className="form-section">
-            <h3>Supplier & Product Information</h3>
+            <div className="form-section-header">
+              <h3>Supplier & Product Information</h3>
+              <button type="button" onClick={() => fillDummyData(1)} className="fill-dummy-button">
+                Fill Dummy Data
+              </button>
+            </div>
             <div className="form-group">
               <label htmlFor="supplier_name">Supplier Name *</label>
               <input
@@ -127,7 +187,12 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
       case 2:
         return (
           <div className="form-section">
-            <h3>Volume & Delivery</h3>
+            <div className="form-section-header">
+              <h3>Volume & Delivery</h3>
+              <button type="button" onClick={() => fillDummyData(2)} className="fill-dummy-button">
+                Fill Dummy Data
+              </button>
+            </div>
             <div className="form-group">
               <label htmlFor="annual_volume">Annual Volume *</label>
               <input
@@ -157,7 +222,12 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
       case 3:
         return (
           <div className="form-section">
-            <h3>Pricing & Payment</h3>
+            <div className="form-section-header">
+              <h3>Pricing & Payment</h3>
+              <button type="button" onClick={() => fillDummyData(3)} className="fill-dummy-button">
+                Fill Dummy Data
+              </button>
+            </div>
             <div className="form-group">
               <label htmlFor="pricing">Pricing *</label>
               <textarea
@@ -199,7 +269,12 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
       case 4:
         return (
           <div className="form-section">
-            <h3>Contract Terms</h3>
+            <div className="form-section-header">
+              <h3>Contract Terms</h3>
+              <button type="button" onClick={() => fillDummyData(4)} className="fill-dummy-button">
+                Fill Dummy Data
+              </button>
+            </div>
             <div className="form-group">
               <label htmlFor="contract_duration">Contract Duration *</label>
               <input
@@ -241,7 +316,12 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
       case 5:
         return (
           <div className="form-section">
-            <h3>Quality & Standards</h3>
+            <div className="form-section-header">
+              <h3>Quality & Standards</h3>
+              <button type="button" onClick={() => fillDummyData(5)} className="fill-dummy-button">
+                Fill Dummy Data
+              </button>
+            </div>
             <div className="form-group">
               <label htmlFor="quality_standards">Quality Standards *</label>
               <textarea
@@ -271,7 +351,12 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
       case 6:
         return (
           <div className="form-section">
-            <h3>Compliance & Risk</h3>
+            <div className="form-section-header">
+              <h3>Compliance & Risk</h3>
+              <button type="button" onClick={() => fillDummyData(6)} className="fill-dummy-button">
+                Fill Dummy Data
+              </button>
+            </div>
             <div className="form-group">
               <label htmlFor="compliance">Compliance *</label>
               <textarea
@@ -301,7 +386,12 @@ export default function ContractInputForm({ onSubmit, isLoading = false }: Contr
       case 7:
         return (
           <div className="form-section">
-            <h3>Additional Clauses</h3>
+            <div className="form-section-header">
+              <h3>Additional Clauses</h3>
+              <button type="button" onClick={() => fillDummyData(7)} className="fill-dummy-button">
+                Fill Dummy Data
+              </button>
+            </div>
             <div className="form-group">
               <label htmlFor="additional_clauses">Additional Clauses *</label>
               <textarea
